@@ -12,7 +12,6 @@ app.post('/pedidos', async (req, res) => {
         res.status(400).json({ erro: erro.message });
     }
 });
-s
 app.get('/pedidos', async (req, res) => {
     try {
         const pedidos = await pedidoService.listarPedidos(req.query.situacao);
