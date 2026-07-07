@@ -1,81 +1,67 @@
-const pedidoRepository = require('./repository/pedido_repository');
+const pedidoRepository = require('../repository/pedido_repository');
 
-const incluirPedido = (dados) => {
-    const { clienteCpf, clienteNome, produtoNome, produtoPreco } = dados;
-
-    if (!clienteCpf || !/^\d{9}$/.test(clienteCpf)) throw new Error("CPF obrigatório, numérico e com 9 algarismos.");
-    if (!clienteNome || clienteNome.length < 5) throw new Error("Nome obrigatório e mínimo de 5 caracteres.");
-    if (!produtoNome || produtoNome.length < 5) throw new Error("Produto obrigatório e mínimo de 5 caracteres.");
-    if (typeof produtoPreco !== 'number' || produtoPreco <= 0) throw new Error("Preço obrigatório e deve ser positivo.");
-
-    return pedidoRepository.incluir({
-        dataHora: new Date(),
-        clienteCpf,
-        clienteNome,
-        produtoNome,
-        produtoPreco,
-        situacao: "aberto"
-    });
-};
-
-const listarPedidos = (situacao) => {
-    if (situacao && !["aberto", "pago", "finalizado"].includes(situacao)) {
-        throw new Error("Situação inválida.");
+exports.criarPedido = async (dados) => {
+    if (!dados.clienteCpf || isNaN(dados.clienteCpf) || dados.clienteCpf.toString().length !== 9) {
+        throw new Error("O CPF do cliente é obrigatório, deve ser numérico e possuir exatos 9 algarismos.");
+    }
+    if (!dados.clienteNome || dados.clienteNome.length < 5) {
+        throw new Error("O nome do cliente é obrigatório e deve ter pelo menos 5 caracteres.");
+    }
+    if (!dados.produtoNome || dados.produtoNome.length < 5) {
+        throw new Error("O nome do produto é obrigatório e deve ter pelo menos 5 caracteres.");
+    }
+    if (!dados.produtoPreco || typeof dados.produtoPreco !== 'number' || dados.produtoPreco <= 0) {
+        throw new Error("O preço do produto é obrigatório e deve ser um número positivo.");
     }
 
-    return pedidoRepository.listarTodos(situacao).map(p => ({
-        codigo: p.codigo,
-        dataHora: p.dataHora,
-        clienteNome: p.clienteNome,
-        produtoNome: p.produtoNome,
-        situacao: p.situacao,
-        valorTotal: p.produtoPreco
-    }));
-};
-
-const consultarPedido = (codigoStr) => {
-    const codigo = Number(codigoStr);
-    if (!codigo) throw new Error("Código inválido.");
-
-    const pedido = pedidoRepository.buscarPorId(codigo);
-    if (!pedido) throw new Error("Pedido não encontrado.");
-
-    return {
-        codigo: pedido.codigo,
-        dataHora: pedido.dataHora,
-        clienteCPF: pedido.clienteCpf,
-        clienteNome: pedido.clienteNome,
-        produtoNome: pedido.produtoNome,
-        situacao: pedido.situacao,
-        valorTotal: pedido.produtoPreco
+    const novoPedido = {
+        ...dados,
+        dataHora: new Date(),
+        situacao: "aberto"
     };
+
+    return await pedidoRepository.salvar(novoPedido);
 };
 
-const atualizarSituacao = (codigoStr, situacao) => {
-    const codigo = Number(codigoStr);
-    if (!codigo) throw new Error("Código inválido.");
-    if (!["aberto", "pago", "finalizado"].includes(situacao)) throw new Error("Situação inválida.");
+exports.listarPedidos = async (situacao) => {
+    if (situacao && !["aberto", "pago", "finalizado"].includes(situacao)) {
+        throw new Error("Situação inválida para filtro. Use 'aberto', 'pago' ou 'finalizado'.");
+    }
+    return await pedidoRepository.listar(situacao);
+};
 
-    const pedido = pedidoRepository.atualizarSituacao(codigo, situacao);
-    if (!pedido) throw new Error("Pedido não encontrado.");
-
+exports.consultarPedido = async (codigo) => {
+    if (!codigo || isNaN(codigo)) {
+        throw new Error("O código do pedido é obrigatório e deve ser um número.");
+    }
+    const pedido = await pedidoRepository.buscarPorId(codigo);
+    if (!pedido) {
+        throw new Error("Pedido não encontrado.");
+    }
     return pedido;
 };
 
-const deletarPedido = (codigoStr) => {
-    const codigo = Number(codigoStr);
-    if (!codigo) throw new Error("Código inválido.");
-
-    const deletado = pedidoRepository.deletar(codigo);
-    if (!deletado) throw new Error("Pedido não encontrado.");
-
-    return deletado;
+exports.atualizarSituacao = async (codigo, situacao) => {
+    if (!codigo || isNaN(codigo)) {
+        throw new Error("O código do pedido é obrigatório e deve ser um número.");
+    }
+    if (!situacao || !["aberto", "pago", "finalizado"].includes(situacao)) {
+        throw new Error("Situação obrigatória e deve ser 'aberto', 'pago' ou 'finalizado'.");
+    }
+    const pedidoAtualizado = await pedidoRepository.atualizarSituacao(codigo, situacao);
+    if (!pedidoAtualizado) {
+        throw new Error("Pedido não encontrado.");
+    }
+    return pedidoAtualizado;
 };
 
-module.exports = {
-    incluirPedido,
-    listarPedidos,
-    consultarPedido,
-    atualizarSituacao,
-    deletarPedido
+exports.deletarPedido = async (codigo) => {
+    if (!codigo || isNaN(codigo)) {
+        throw new Error("O código do pedido é obrigatório e deve ser um número.");
+    }
+    const deletado = await pedidoRepository.deletar(codigo);
+    if (!deletado) {
+        throw new Error("Pedido não encontrado.");
+    }
+    return deletado;
 };

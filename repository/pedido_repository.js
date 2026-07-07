@@ -1,35 +1,36 @@
-const pedidos = [];
-let proximoPedido = 1;
+let pedidos = [];
+let proximoCodigo = 1;
 
-const incluir = async (pedido) => {
-    pedido.codigo = proximoPedido++;
+exports.salvar = async (pedido) => {
+    pedido.codigo = proximoCodigo++;
     pedidos.push(pedido);
     return pedido;
 };
 
-const listarTodos = async (situacao) => {
-    return situacao ? pedidos.filter(p => p.situacao === situacao) : pedidos;
+exports.listar = async (situacao) => {
+    if (situacao) {
+        return pedidos.filter(p => p.situacao === situacao);
+    }
+    return pedidos;
 };
 
-const buscarPorId = async (codigo) => {
-    return pedidos.find(p => p.codigo === codigo);
+exports.buscarPorId = async (codigo) => {
+    return pedidos.find(p => p.codigo === parseInt(codigo));
 };
 
-const atualizarSituacao = async (codigo, situacao) => {
-    const pedido = await buscarPorId(codigo);
-    if (pedido) pedido.situacao = situacao;
+exports.atualizarSituacao = async (codigo, novaSituacao) => {
+    const pedido = pedidos.find(p => p.codigo === parseInt(codigo));
+    if (pedido) {
+        pedido.situacao = novaSituacao;
+    }
     return pedido;
 };
 
-const deletar = async (codigo) => {
-    const index = pedidos.findIndex(p => p.codigo === codigo);
-    return index !== -1 ? pedidos.splice(index, 1)[0] : null;
-};
-
-module.exports = {
-    incluir,
-    listarTodos,
-    buscarPorId,
-    atualizarSituacao,
-    deletar
+exports.deletar = async (codigo) => {
+    const index = pedidos.findIndex(p => p.codigo === parseInt(codigo));
+    if (index !== -1) {
+        pedidos.splice(index, 1);
+        return true;
+    }
+    return false;
 };

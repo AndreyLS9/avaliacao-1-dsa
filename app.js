@@ -4,44 +4,48 @@ const pedidoService = require('./service/pedido_service');
 const app = express();
 app.use(express.json());
 
-app.post('/pedidos', (req, res) => {
+app.post('/pedidos', async (req, res) => {
     try {
-        res.status(201).json(pedidoService.incluirPedido(req.body));
-    } catch (error) {
-        res.status(400).json({ erro: error.message });
+        const novoPedido = await pedidoService.criarPedido(req.body);
+        res.status(201).json(novoPedido);
+    } catch (erro) {
+        res.status(400).json({ erro: erro.message });
+    }
+});
+s
+app.get('/pedidos', async (req, res) => {
+    try {
+        const pedidos = await pedidoService.listarPedidos(req.query.situacao);
+        res.status(200).json(pedidos);
+    } catch (erro) {
+        res.status(400).json({ erro: erro.message });
     }
 });
 
-app.get('/pedidos', (req, res) => {
+app.get('/pedidos/:id', async (req, res) => {
     try {
-        res.status(200).json(pedidoService.listarPedidos(req.query.situacao));
-    } catch (error) {
-        res.status(400).json({ erro: error.message });
+        const pedido = await pedidoService.consultarPedido(req.params.id);
+        res.status(200).json(pedido);
+    } catch (erro) {
+        res.status(404).json({ erro: erro.message });
     }
 });
 
-app.get('/pedidos/:codigo', (req, res) => {
+app.patch('/pedidos/:id/situacao', async (req, res) => {
     try {
-        res.status(200).json(pedidoService.consultarPedido(req.params.codigo));
-    } catch (error) {
-        res.status(error.message.includes("encontrado") ? 404 : 400).json({ erro: error.message });
+        const pedido = await pedidoService.atualizarSituacao(req.params.id, req.body.situacao);
+        res.status(200).json(pedido);
+    } catch (erro) {
+        res.status(400).json({ erro: erro.message });
     }
 });
 
-app.patch('/pedidos/:codigo/situacao', (req, res) => {
+app.delete('/pedidos/:id', async (req, res) => {
     try {
-        res.status(200).json(pedidoService.atualizarSituacao(req.params.codigo, req.body.situacao));
-    } catch (error) {
-        res.status(error.message.includes("encontrado") ? 404 : 400).json({ erro: error.message });
-    }
-});
-
-app.delete('/pedidos/:codigo', (req, res) => {
-    try {
-        pedidoService.deletarPedido(req.params.codigo);
+        await pedidoService.deletarPedido(req.params.id);
         res.status(204).send();
-    } catch (error) {
-        res.status(error.message.includes("encontrado") ? 404 : 400).json({ erro: error.message });
+    } catch (erro) {
+        res.status(404).json({ erro: erro.message });
     }
 });
 
